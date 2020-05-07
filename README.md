@@ -1,6 +1,6 @@
 # rest_app
 
-A new Flutter project.
+Mobile application for restaurant
 
 ## Getting Started
 
