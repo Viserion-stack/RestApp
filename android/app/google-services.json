@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "778637184124",
+    "firebase_url": "https://flutter-update-fb73c.firebaseio.com",
+    "project_id": "flutter-update-fb73c",
+    "storage_bucket": "flutter-update-fb73c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778637184124:android:911262a77a362488730df9",
+        "android_client_info": {
+          "package_name": "com.example.restauranttt"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "778637184124-svpb7ea4hcqv9v61g1vcrs7dni9mk7og.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAljMv2uwvuALPY6QTWerJ4ps1-YezusyQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "778637184124-svpb7ea4hcqv9v61g1vcrs7dni9mk7og.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

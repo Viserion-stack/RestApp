@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +13,8 @@ class OrderItem {
   final List<CartItem> products;
   final DateTime dateTime;
   final String extraComment;
-  final int tableNumber;
+  final String tableNumber;
+  final bool isReady;
 
   OrderItem({
     @required this.id,
@@ -21,6 +23,7 @@ class OrderItem {
     @required this.dateTime,
     this.extraComment,
     @required this.tableNumber,
+    @required this.isReady,
   });
 }
 
@@ -35,6 +38,8 @@ class Orders with ChangeNotifier {
     return [..._orders];
   }
 
+  final fbm = FirebaseMessaging();
+
   Future<void> fetchAndSetOrders([bool filterByUser = false]) async {
     final filterString =
         filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
@@ -44,6 +49,8 @@ class Orders with ChangeNotifier {
     final List<OrderItem> loadedOrders = [];
     final extractedData = json.decode(response.body) as Map<String, dynamic>;
     if (extractedData == null) {
+      _orders = [];
+      notifyListeners();
       return;
     }
     extractedData.forEach((orderId, orderData) {
@@ -54,6 +61,7 @@ class Orders with ChangeNotifier {
           dateTime: DateTime.parse(orderData['dateTime']),
           extraComment: orderData['extraComment'],
           tableNumber: orderData['tableNumber'],
+          isReady: orderData['isReady'],
           products: (orderData['products'] as List<dynamic>)
               .map(
                 (item) => CartItem(
@@ -73,9 +81,11 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> addOrder(
-      List<CartItem> cartProducts, double total, int tableNumber) async {
+      List<CartItem> cartProducts, double total, String tableNumber) async {
     final url =
         'https://flutter-update-fb73c.firebaseio.com/orders.json?auth=$authToken';
+    final tokenId = await fbm.getToken();
+    //print(tokenId);
     final timestamp = DateTime.now();
     final response = await http.post(
       url,
@@ -93,6 +103,8 @@ class Orders with ChangeNotifier {
                 })
             .toList(),
         'creatorId': userId,
+        'token': tokenId,
+        'isReady': false,
       }),
     );
     _orders.insert(
@@ -104,6 +116,7 @@ class Orders with ChangeNotifier {
         dateTime: timestamp,
         products: cartProducts,
         extraComment: json.decode(response.body)['extraComment'],
+        isReady: json.decode(response.body)['isReady'],
       ),
     );
     notifyListeners();
@@ -123,6 +136,30 @@ class Orders with ChangeNotifier {
     final response = await http.delete(url);
     print(json.decode(response.body));
     if (response.statusCode >= 400) {
+      _orders.insert(existingOrderIndex, existingOrder);
+      notifyListeners();
+      throw HttpException('Nie można usunąć zamówienia.');
+    }
+    existingOrder = null;
+    notifyListeners();
+  }
+
+  Future<void> updateOrder(String ordId, [bool filterByUser = false]) async {
+    final filterString =
+        filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
+    final url =
+        'https://flutter-update-fb73c.firebaseio.com/orders/$ordId.json?auth=$authToken&$filterString';
+
+    final existingOrderIndex = _orders.indexWhere((ord) => ord.id == ordId);
+    var existingOrder = _orders[existingOrderIndex];
+    //_orders.removeAt(existingOrderIndex);
+    //notifyListeners();
+    final response = await http.patch(url,
+        body: json.encode({
+          'isReady': true,
+        }));
+    if (response.statusCode >= 400) {
+      print('Udało się isReady na true');
       _orders.insert(existingOrderIndex, existingOrder);
       notifyListeners();
       throw HttpException('Nie można usunąć zamówienia.');

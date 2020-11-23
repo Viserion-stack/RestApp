@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:restauranttt/screens/cart_screen.dart';
+import 'package:restauranttt/screens/notyfication.dart';
 import 'package:restauranttt/screens/products_overview_screen.dart';
 
 import '../screens/orders_screen.dart';
@@ -56,6 +57,15 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).pushNamed(CartScreen.routeName);
+            },
+          ),
+          Divider(),
+          ListTile(
+            leading: Icon(Icons.notifications_active),
+            title: Text('Powiadomienia'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed(Notyfi.routeName);
             },
           ),
           Divider(),

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,8 +9,19 @@ import '../models/http_exception.dart';
 
 enum AuthMode { Signup, Login }
 
-class AuthScreen extends StatelessWidget {
+class AuthScreen extends StatefulWidget {
   static const routeName = '/auth';
+
+  @override
+  _AuthScreenState createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends State<AuthScreen> {
+  @override
+  void initState() {
+    Firebase.initializeApp();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -245,32 +257,50 @@ class _AuthCardState extends State<AuthCard>
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'E-Mail'),
-                  keyboardType: TextInputType.emailAddress,
-                  // ignore: missing_return
-                  validator: (value) {
-                    if (value.isEmpty || !value.contains('@')) {
-                      return 'Niepoprawne hasło!';
-                    }
-                  },
-                  onSaved: (value) {
-                    _authData['email'] = value;
-                  },
+                ListTile(
+                  //trailing: Icon(Icons.account_box),
+                  title: TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'E-Mail',
+                      icon: Icon(
+                        Icons.account_box,
+                        size: 30,
+                      ),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    // ignore: missing_return
+                    validator: (value) {
+                      if (value.isEmpty || !value.contains('@')) {
+                        return 'Niepoprawne hasło!';
+                      }
+                    },
+                    onSaved: (value) {
+                      _authData['email'] = value;
+                    },
+                  ),
                 ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: 'Hasło'),
-                  obscureText: true,
-                  controller: _passwordController,
-                  // ignore: missing_return
-                  validator: (value) {
-                    if (value.isEmpty || value.length < 5) {
-                      return 'Hasło jest za krótkie!';
-                    }
-                  },
-                  onSaved: (value) {
-                    _authData['password'] = value;
-                  },
+                ListTile(
+                  //trailing: Icon(Icons.lock_outline),
+                  title: TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'Hasło',
+                      icon: Icon(
+                        Icons.lock,
+                        size: 30,
+                      ),
+                    ),
+                    obscureText: true,
+                    controller: _passwordController,
+                    // ignore: missing_return
+                    validator: (value) {
+                      if (value.isEmpty || value.length < 5) {
+                        return 'Hasło jest za krótkie!';
+                      }
+                    },
+                    onSaved: (value) {
+                      _authData['password'] = value;
+                    },
+                  ),
                 ),
                 AnimatedContainer(
                   constraints: BoxConstraints(
@@ -283,18 +313,26 @@ class _AuthCardState extends State<AuthCard>
                     opacity: _opacityAnimation,
                     child: SlideTransition(
                       position: _slideAnimation,
-                      child: TextFormField(
-                        enabled: _authMode == AuthMode.Signup,
-                        decoration: InputDecoration(labelText: 'Powtórz hasło'),
-                        obscureText: true,
-                        validator: _authMode == AuthMode.Signup
-                            // ignore: missing_return
-                            ? (value) {
-                                if (value != _passwordController.text) {
-                                  return 'Hasła nie pasują do siebie!';
+                      child: ListTile(
+                        title: TextFormField(
+                          enabled: _authMode == AuthMode.Signup,
+                          decoration: InputDecoration(
+                            labelText: 'Powtórz hasło',
+                            icon: Icon(
+                              Icons.lock_outline,
+                              size: 30,
+                            ),
+                          ),
+                          obscureText: true,
+                          validator: _authMode == AuthMode.Signup
+                              // ignore: missing_return
+                              ? (value) {
+                                  if (value != _passwordController.text) {
+                                    return 'Hasła nie pasują do siebie!';
+                                  }
                                 }
-                              }
-                            : null,
+                              : null,
+                        ),
                       ),
                     ),
                   ),

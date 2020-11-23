@@ -9,6 +9,8 @@ import '../models/http_exception.dart';
 
 class Auth with ChangeNotifier {
   String _token;
+  // ignore: non_constant_identifier_names
+  String _refreshToken;
   DateTime _expiryDate;
   String _userId;
   Timer _authTimer;
@@ -18,11 +20,13 @@ class Auth with ChangeNotifier {
   }
 
   String get token {
+    print('TUTAJ POBIERAM TOKENA');
     if (_expiryDate != null &&
         _expiryDate.isAfter(DateTime.now()) &&
         _token != null) {
       return _token;
     }
+    //refreshSession();
     return null;
   }
 
@@ -50,6 +54,8 @@ class Auth with ChangeNotifier {
         throw HttpException(responseData['error']['message']);
       }
       _token = responseData['idToken'];
+      _refreshToken = responseData['refreshToken'];
+
       _userId = responseData['localId'];
       _expiryDate = DateTime.now().add(
         Duration(
@@ -58,16 +64,22 @@ class Auth with ChangeNotifier {
           ),
         ),
       );
-      _autoLogout();
+      print(_expiryDate.difference(DateTime.now()).inSeconds);
+      //_autoLogout();
       notifyListeners();
       final prefs = await SharedPreferences.getInstance();
       final userData = json.encode(
         {
           'token': _token,
+          'refreshToken': _refreshToken,
           'userId': _userId,
           'expiryDate': _expiryDate.toIso8601String(),
         },
       );
+      new Timer.periodic(Duration(minutes: 55), (timer) {
+        print('ODSWIEZAM TOKENA!');
+        //refreshSession();
+      });
       prefs.setString('userData', userData);
     } catch (error) {
       throw error;
@@ -83,6 +95,8 @@ class Auth with ChangeNotifier {
   }
 
   Future<bool> tryAutoLogin() async {
+    //refreshSession();
+    print('TUTAJ PRÓBUJE AUTO LOGINU');
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('userData')) {
       return false;
@@ -95,10 +109,13 @@ class Auth with ChangeNotifier {
       return false;
     }
     _token = extractedUserData['token'];
+    _refreshToken = extractedUserData['refreshToken'];
     _userId = extractedUserData['userId'];
     _expiryDate = expiryDate;
+    print('czas wygaśniecia: ' + expiryDate.toIso8601String());
+
     notifyListeners();
-    _autoLogout();
+    //_autoLogout();
     return true;
   }
 
@@ -116,11 +133,66 @@ class Auth with ChangeNotifier {
     prefs.clear();
   }
 
+  // ignore: unused_element
   void _autoLogout() {
     if (_authTimer != null) {
       _authTimer.cancel();
     }
     final timeToExpiry = _expiryDate.difference(DateTime.now()).inSeconds;
     _authTimer = Timer(Duration(seconds: timeToExpiry), logout);
+  }
+
+  Future<void> refreshSession() async {
+    print('ODŚWIEZAM TOKENA!');
+    final prefs = await SharedPreferences.getInstance();
+    final extractedUserData =
+        json.decode(prefs.getString('userData')) as Map<String, Object>;
+    _refreshToken = extractedUserData['refreshToken'];
+
+    print(_refreshToken);
+    final url =
+        'https://securetoken.googleapis.com/v1/token?key=AIzaSyAljMv2uwvuALPY6QTWerJ4ps1-YezusyQ';
+    try {
+      final response = await http.post(
+        url,
+        body: json.encode(
+          {
+            'grant_type': 'refresh_token',
+            'refresh_token': _refreshToken,
+          },
+        ),
+      );
+      final responseData = json.decode(response.body);
+      if (responseData['error'] != null) {
+        throw HttpException(responseData['error']['message']);
+      }
+      _token = responseData['id_token'];
+
+      _refreshToken = responseData['refresh_token'];
+      _userId = responseData['user_id'];
+      _expiryDate = DateTime.now().add(
+        Duration(
+          seconds: int.parse(
+            responseData['expires_in'],
+          ),
+        ),
+      );
+      print('Expiry DATEEEE: ' + _expiryDate.toIso8601String());
+      print('REFRESH_TEOKEN: ' + _refreshToken);
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      final userData = json.encode(
+        {
+          'token': _token,
+          'refreshToken': _refreshToken,
+          'userId': _userId,
+          'expiryDate': _expiryDate.toIso8601String(),
+        },
+      );
+      prefs.setString('userData', userData);
+    } catch (error) {
+      throw error;
+    }
+    notifyListeners();
   }
 }
